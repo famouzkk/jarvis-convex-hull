@@ -1,7 +1,6 @@
 cmake_minimum_required(VERSION 3.14)
 project(jarvis_convex_hull)
 
-
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON) # for vscode includes
 # raylib
 find_package(raylib QUIET)
