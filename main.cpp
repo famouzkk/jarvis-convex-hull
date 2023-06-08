@@ -150,7 +150,8 @@ public:
 
 
 
-void draw_help() {
+void draw_info(Plane &p) {
+    raylib::DrawText("Punktów: " + std::to_string(p.get_points().size()), 20, 560, 22, raylib::Color::Beige());
     raylib::DrawText("[Esc] Quit", 20, 20, 18, raylib::Color::Gray());
     raylib::DrawText("[F5] Randomize", 120, 20, 18, raylib::Color::Gray());
 }
@@ -172,8 +173,7 @@ int main() {
 
         BeginDrawing();
         {
-            draw_help();
-            raylib::DrawText("Punktów: " + std::to_string(plane.get_points().size()), 20, 680, 22, raylib::Color::Beige());
+            draw_info(plane);
             plane.draw_points();
             plane.draw_path();
 
