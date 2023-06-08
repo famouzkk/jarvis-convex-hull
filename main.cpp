@@ -1,6 +1,7 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
+#include <stdexcept>
 #include <vector>
 #include <string>
 #include <random>
@@ -10,8 +11,11 @@
 
 #include "raylib-cpp.hpp"
 
-const uint32_t HEIGHT = 600;
-const uint32_t WIDTH = 800;
+const uint32_t SCREEN_WIDTH = 800;
+const uint32_t SCREEN_HEIGHT = 600;
+const uint32_t UI_FONT_SIZE = 18;
+const raylib::Color UI_FONT_COLOR = raylib::Color::LightGray();
+
 
 using std::chrono::system_clock;
 std::default_random_engine generator(system_clock::now().time_since_epoch().count());
@@ -38,19 +42,31 @@ struct Point {
     }
 };
 
+
 float find_angle(const Point& p0, const Point& p1, const Point& p2) {
-    float b = std::pow(abs(p1.x - p0.x), 2) + std::pow(abs(p1.y - p0.y), 2);
-    float a = std::pow(abs(p1.x - p2.x), 2) + std::pow(abs(p1.y - p2.y), 2);
-    float c = std::pow(abs(p2.x - p0.x), 2) + std::pow(abs(p2.y - p0.y), 2);
+    Point v0 = { p0.x - p1.x, p0.y - p1.y }; 
+    Point v1 = { p2.x - p1.x, p2.y - p1.y }; 
 
-    float denominator = std::sqrt(4 * a * b);
-    if (denominator == 0.f) {
-        // Handle collinear points (special case)
-        return 0.0f;
+    // Calculate the dot product
+    float dotProduct = v0.x * v1.x + v0.y * v1.y;
+
+    // Calculate the cross product magnitude
+    float crossProductMagnitude = v0.x * v1.y - v0.y * v1.x;
+
+    // Calculate the angle between the vectors
+    float angle = atan2(crossProductMagnitude, dotProduct);
+
+    // Convert the angle to degrees, maybe part under is not needed
+    angle = angle * 180.0 / M_PI;
+
+    //Ensure the angle is within [0, 360)
+    while (angle < 0.0) {
+        angle += 360.0;
     }
-
-    float angle = (a + b - c) / denominator;
-    return std::acos(angle);
+    while (angle >= 360.0) {
+        angle -= 360.0;
+    }
+    return angle;
 }
 
 std::pair<int, int> split_string(const std::string& str, char delimiter) {
@@ -87,8 +103,9 @@ public:
 
     void randomize_points() {
         for(auto& p : points) {
-            std::uniform_int_distribution<int> x_distribution(0, WIDTH);
-            std::uniform_int_distribution<int> y_distribution(0, HEIGHT);
+            // 20 to SIZE-20, to center it more
+            std::uniform_int_distribution<int> x_distribution(20, SCREEN_WIDTH - 20);
+            std::uniform_int_distribution<int> y_distribution(20, SCREEN_HEIGHT - 20);
             p.x = x_distribution(generator);
             p.y = y_distribution(generator);
         }
@@ -113,7 +130,7 @@ public:
         path.push_back(get_bottommost_point());
 
         // create first fake point as reference for calculating angle
-        auto second_last = Point{std::numeric_limits<int>::min(), get_bottommost_point().y};
+        auto second_last = Point{-200, get_bottommost_point().y};
         auto last = path.back();
 
         while(path.front() != path.back() || path.size() == 1) {
@@ -129,6 +146,8 @@ public:
             second_last = *std::prev(path.end(), 2);
             last = *std::prev(path.end());
         }
+        std::cout  << std::endl;
+                
     }
 
     void draw_points() {
@@ -147,25 +166,22 @@ public:
 };
 
 
-
-
-
 void draw_info(Plane &p) {
-    raylib::DrawText("Punktów: " + std::to_string(p.get_points().size()), 20, 560, 22, raylib::Color::Beige());
-    raylib::DrawText("[Esc] Quit", 20, 20, 18, raylib::Color::Gray());
-    raylib::DrawText("[F5] Randomize", 120, 20, 18, raylib::Color::Gray());
+    raylib::DrawText("Number of points: " + std::to_string(p.get_points().size()), 20, 560, UI_FONT_SIZE, UI_FONT_COLOR);
+    raylib::DrawText("[Esc] Quit", 20, 20, UI_FONT_SIZE, UI_FONT_COLOR);
+    raylib::DrawText("[Spacebar] Randomize", 120, 20, UI_FONT_SIZE, UI_FONT_COLOR);
 }
 
 int main() {
-    raylib::Window window(WIDTH, HEIGHT, "Jarvis - Convex Hull");
+    raylib::Window window(SCREEN_WIDTH, SCREEN_HEIGHT, "Jarvis - Convex Hull");
 
-    Plane plane {"../points.txt"};
+    Plane plane (200);
+    plane.randomize_points();
     plane.make_path();
 
 
     while(!window.ShouldClose()) {
-        if(IsKeyReleased(KeyboardKey::KEY_F5)) {
-
+        if(IsKeyReleased(KeyboardKey::KEY_SPACE)) {
             plane.randomize_points();
             plane.make_path();
         }
@@ -173,9 +189,9 @@ int main() {
 
         BeginDrawing();
         {
-            draw_info(plane);
             plane.draw_points();
             plane.draw_path();
+            draw_info(plane);
 
             window.ClearBackground(raylib::Color::Black());
         }
