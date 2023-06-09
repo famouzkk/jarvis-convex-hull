@@ -176,7 +176,6 @@ int main() {
     raylib::Window window(SCREEN_WIDTH, SCREEN_HEIGHT, "Jarvis - Convex Hull");
 
     Plane plane (200);
-    plane.randomize_points();
     plane.make_path();
 
 
